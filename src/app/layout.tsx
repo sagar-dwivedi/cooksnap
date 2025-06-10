@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 const isProd = process.env.NODE_ENV === "production";
-const siteURL = isProd ? "https://www.cooksnap.app" : "http://localhost:3000";
+const siteURL = isProd ? "https://cooksnap-rho.vercel.app/" : "http://localhost:3000";
 
 export const metadata: Metadata = {
   title:
