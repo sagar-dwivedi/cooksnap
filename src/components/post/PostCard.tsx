@@ -1,20 +1,21 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import {
-  Heart,
-  MessageCircle,
-  Send,
   Bookmark,
-  MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  Heart,
+  MessageCircle,
+  MoreHorizontal,
   Play,
+  Send,
+  Verified,
   Volume2,
   VolumeX,
-  Verified,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function PostCard({
   post,
@@ -34,95 +35,120 @@ export function PostCard({
     location?: string;
   };
 }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
-  const [showFullCaption, setShowFullCaption] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isDoubleTapped, setIsDoubleTapped] = useState(false);
-  const lastTapRef = useRef(0);
+const [currentIndex, setCurrentIndex] = useState(0);
+const [isLiked, setIsLiked] = useState(false);
+const [isSaved, setIsSaved] = useState(false);
+const [showFullCaption, setShowFullCaption] = useState(false);
+const [isMuted, setIsMuted] = useState(true);
+const [isPlaying, setIsPlaying] = useState(false);
+const videoRef = useRef<HTMLVideoElement>(null);
+const [isDoubleTapped, setIsDoubleTapped] = useState(false);
+const lastTapRef = useRef(0);
 
-  // Handle swipe gestures for carousel
-  const [touchStart, setTouchStart] = useState(0);
-  const [touchEnd, setTouchEnd] = useState(0);
+// Handle swipe gestures for carousel
+const [touchStart, setTouchStart] = useState(0);
+const [touchEnd, setTouchEnd] = useState(0);
 
-  const nextSlide = () => {
-    setCurrentIndex((i) => (i + 1 < post.media.length ? i + 1 : i));
-  };
+// Memoize these functions to prevent unnecessary recreations
+const nextSlide = useCallback(() => {
+  setCurrentIndex((i) => (i + 1 < post.media.length ? i + 1 : i));
+}, [post.media.length]);
 
-  const prevSlide = () => {
-    setCurrentIndex((i) => (i > 0 ? i - 1 : i));
-  };
+const prevSlide = useCallback(() => {
+  setCurrentIndex((i) => (i > 0 ? i - 1 : i));
+}, []);
 
-  const toggleLike = () => {
-    setIsLiked(!isLiked);
-    if (!isLiked) {
+const toggleLike = useCallback(() => {
+  setIsLiked(prev => {
+    if (!prev) {
       setIsDoubleTapped(true);
       setTimeout(() => setIsDoubleTapped(false), 1000);
     }
-  };
+    return !prev;
+  });
+}, []);
 
-  const toggleSave = () => setIsSaved(!isSaved);
-  const toggleMute = () => setIsMuted(!isMuted);
+const toggleSave = useCallback(() => setIsSaved(prev => !prev), []);
+const toggleMute = useCallback(() => setIsMuted(prev => !prev), []);
 
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setIsPlaying(!isPlaying);
+const togglePlay = useCallback(() => {
+  if (videoRef.current) {
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(e => console.error("Video play failed:", e));
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  }
+}, []);
+
+const formatLikes = (count: number) => {
+  if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + "M";
+  if (count >= 1_000) return (count / 1_000).toFixed(1) + "K";
+  return count.toString();
+};
+
+const handleTouchStart = (e: React.TouchEvent) => {
+  setTouchStart(e.targetTouches[0].clientX);
+  setTouchEnd(e.targetTouches[0].clientX); // Reset touchEnd to the same position
+};
+
+const handleTouchMove = (e: React.TouchEvent) => {
+  setTouchEnd(e.targetTouches[0].clientX);
+};
+
+const handleTouchEnd = () => {
+  const difference = touchStart - touchEnd;
+  const threshold = 50;
+  
+  if (difference > threshold) {
+    nextSlide();
+  } else if (difference < -threshold) {
+    prevSlide();
+  }
+};
+
+const handleDoubleTap = () => {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTapRef.current;
+  const doubleTapDelay = 300;
+  
+  if (tapLength < doubleTapDelay && tapLength > 0) {
+    toggleLike();
+  }
+  lastTapRef.current = currentTime;
+};
+
+// Accessibility: Keyboard navigation for carousel
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (post.type === "carousel" && post.media.length > 1) {
+      if (e.key === "ArrowRight") nextSlide();
+      if (e.key === "ArrowLeft") prevSlide();
     }
   };
 
-  const formatLikes = (count: number) => {
-    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + "M";
-    if (count >= 1_000) return (count / 1_000).toFixed(1) + "K";
-    return count.toString();
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [nextSlide, prevSlide, post.media.length, post.type]);
+
+// Sync video playing state with actual video element
+useEffect(() => {
+  const video = videoRef.current;
+  if (!video) return;
+
+  const handlePlay = () => setIsPlaying(true);
+  const handlePause = () => setIsPlaying(false);
+
+  video.addEventListener('play', handlePlay);
+  video.addEventListener('pause', handlePause);
+
+  return () => {
+    video.removeEventListener('play', handlePlay);
+    video.removeEventListener('pause', handlePause);
   };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStart - touchEnd > 50) {
-      nextSlide();
-    }
-
-    if (touchStart - touchEnd < -50) {
-      prevSlide();
-    }
-  };
-
-  const handleDoubleTap = (e: React.MouseEvent | React.TouchEvent) => {
-    const currentTime = new Date().getTime();
-    const tapLength = currentTime - lastTapRef.current;
-    if (tapLength < 300 && tapLength > 0) {
-      toggleLike();
-    }
-    lastTapRef.current = currentTime;
-  };
-
-  // Accessibility: Keyboard navigation for carousel
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (post.type === "carousel" && post.media.length > 1) {
-        if (e.key === "ArrowRight") nextSlide();
-        if (e.key === "ArrowLeft") prevSlide();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex]);
+}, []);
 
   return (
     <article className="w-full max-w-xl mx-auto rounded-xl border border-muted bg-background overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
@@ -130,9 +156,9 @@ export function PostCard({
       <header className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <img
+            <Image
               src={post.user?.avatar || `https://i.pravatar.cc/40?u=${post.id}`}
-              alt={`${post.user?.name || 'User'} avatar`}
+              alt={`${post.user?.name || "User"} avatar`}
               className="w-10 h-10 rounded-full object-cover border border-muted"
               width={40}
               height={40}
@@ -186,7 +212,7 @@ export function PostCard({
               aria-label={isPlaying ? "Pause video" : "Play video"}
             >
               <Play
-                className={`w-8 h-8 text-white ${isPlaying ? 'hidden' : 'block'}`}
+                className={`w-8 h-8 text-white ${isPlaying ? "hidden" : "block"}`}
               />
             </button>
             <button
@@ -203,7 +229,7 @@ export function PostCard({
           </div>
         ) : (
           <>
-            <img
+            <Image
               src={post.media[currentIndex]}
               alt={`Post content ${currentIndex + 1} of ${post.media.length}`}
               className="w-full h-full object-cover select-none"
