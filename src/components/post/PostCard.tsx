@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { FunctionReturnType } from "convex/server";
 import {
   Bookmark,
   ChevronLeft,
@@ -16,139 +17,129 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "../../../convex/_generated/api";
 
-export function PostCard({
-  post,
-}: {
-  post: {
-    id: number;
-    type: "image" | "carousel" | "video";
-    media: string[];
-    user?: {
-      name: string;
-      avatar: string;
-      verified?: boolean;
+type RecentPostsReturnType = FunctionReturnType<
+  typeof api.recipes.getRecentPosts
+>;
+
+export function PostCard({ post }: { post: RecentPostsReturnType["page"][number] }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [showFullCaption, setShowFullCaption] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isDoubleTapped, setIsDoubleTapped] = useState(false);
+  const lastTapRef = useRef(0);
+
+  // Handle swipe gestures for carousel
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  // Memoize these functions to prevent unnecessary recreations
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((i) => (i + 1 < post.mediaIds.length ? i + 1 : i));
+  }, [post.mediaIds.length]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentIndex((i) => (i > 0 ? i - 1 : i));
+  }, []);
+
+  const toggleLike = useCallback(() => {
+    setIsLiked((prev) => {
+      if (!prev) {
+        setIsDoubleTapped(true);
+        setTimeout(() => setIsDoubleTapped(false), 1000);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const toggleSave = useCallback(() => setIsSaved((prev) => !prev), []);
+  const toggleMute = useCallback(() => setIsMuted((prev) => !prev), []);
+
+  const togglePlay = useCallback(() => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current
+          .play()
+          .catch((e) => console.error("Video play failed:", e));
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  }, []);
+
+  const formatLikes = (count: number) => {
+    if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + "M";
+    if (count >= 1_000) return (count / 1_000).toFixed(1) + "K";
+    return count.toString();
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    setTouchEnd(e.targetTouches[0].clientX); // Reset touchEnd to the same position
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    const difference = touchStart - touchEnd;
+    const threshold = 50;
+
+    if (difference > threshold) {
+      nextSlide();
+    } else if (difference < -threshold) {
+      prevSlide();
+    }
+  };
+
+  const handleDoubleTap = () => {
+    const currentTime = new Date().getTime();
+    const tapLength = currentTime - lastTapRef.current;
+    const doubleTapDelay = 300;
+
+    if (tapLength < doubleTapDelay && tapLength > 0) {
+      toggleLike();
+    }
+    lastTapRef.current = currentTime;
+  };
+
+  // Accessibility: Keyboard navigation for carousel
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (post.type === "carousel" && post.media.length > 1) {
+        if (e.key === "ArrowRight") nextSlide();
+        if (e.key === "ArrowLeft") prevSlide();
+      }
     };
-    caption?: string;
-    likes?: number;
-    timestamp?: string;
-    location?: string;
-  };
-}) {
-const [currentIndex, setCurrentIndex] = useState(0);
-const [isLiked, setIsLiked] = useState(false);
-const [isSaved, setIsSaved] = useState(false);
-const [showFullCaption, setShowFullCaption] = useState(false);
-const [isMuted, setIsMuted] = useState(true);
-const [isPlaying, setIsPlaying] = useState(false);
-const videoRef = useRef<HTMLVideoElement>(null);
-const [isDoubleTapped, setIsDoubleTapped] = useState(false);
-const lastTapRef = useRef(0);
 
-// Handle swipe gestures for carousel
-const [touchStart, setTouchStart] = useState(0);
-const [touchEnd, setTouchEnd] = useState(0);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [nextSlide, prevSlide, post.media.length, post.type]);
 
-// Memoize these functions to prevent unnecessary recreations
-const nextSlide = useCallback(() => {
-  setCurrentIndex((i) => (i + 1 < post.media.length ? i + 1 : i));
-}, [post.media.length]);
+  // Sync video playing state with actual video element
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
 
-const prevSlide = useCallback(() => {
-  setCurrentIndex((i) => (i > 0 ? i - 1 : i));
-}, []);
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
 
-const toggleLike = useCallback(() => {
-  setIsLiked(prev => {
-    if (!prev) {
-      setIsDoubleTapped(true);
-      setTimeout(() => setIsDoubleTapped(false), 1000);
-    }
-    return !prev;
-  });
-}, []);
+    video.addEventListener("play", handlePlay);
+    video.addEventListener("pause", handlePause);
 
-const toggleSave = useCallback(() => setIsSaved(prev => !prev), []);
-const toggleMute = useCallback(() => setIsMuted(prev => !prev), []);
-
-const togglePlay = useCallback(() => {
-  if (videoRef.current) {
-    if (videoRef.current.paused) {
-      videoRef.current.play().catch(e => console.error("Video play failed:", e));
-      setIsPlaying(true);
-    } else {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  }
-}, []);
-
-const formatLikes = (count: number) => {
-  if (count >= 1_000_000) return (count / 1_000_000).toFixed(1) + "M";
-  if (count >= 1_000) return (count / 1_000).toFixed(1) + "K";
-  return count.toString();
-};
-
-const handleTouchStart = (e: React.TouchEvent) => {
-  setTouchStart(e.targetTouches[0].clientX);
-  setTouchEnd(e.targetTouches[0].clientX); // Reset touchEnd to the same position
-};
-
-const handleTouchMove = (e: React.TouchEvent) => {
-  setTouchEnd(e.targetTouches[0].clientX);
-};
-
-const handleTouchEnd = () => {
-  const difference = touchStart - touchEnd;
-  const threshold = 50;
-  
-  if (difference > threshold) {
-    nextSlide();
-  } else if (difference < -threshold) {
-    prevSlide();
-  }
-};
-
-const handleDoubleTap = () => {
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTapRef.current;
-  const doubleTapDelay = 300;
-  
-  if (tapLength < doubleTapDelay && tapLength > 0) {
-    toggleLike();
-  }
-  lastTapRef.current = currentTime;
-};
-
-// Accessibility: Keyboard navigation for carousel
-useEffect(() => {
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (post.type === "carousel" && post.media.length > 1) {
-      if (e.key === "ArrowRight") nextSlide();
-      if (e.key === "ArrowLeft") prevSlide();
-    }
-  };
-
-  window.addEventListener("keydown", handleKeyDown);
-  return () => window.removeEventListener("keydown", handleKeyDown);
-}, [nextSlide, prevSlide, post.media.length, post.type]);
-
-// Sync video playing state with actual video element
-useEffect(() => {
-  const video = videoRef.current;
-  if (!video) return;
-
-  const handlePlay = () => setIsPlaying(true);
-  const handlePause = () => setIsPlaying(false);
-
-  video.addEventListener('play', handlePlay);
-  video.addEventListener('pause', handlePause);
-
-  return () => {
-    video.removeEventListener('play', handlePlay);
-    video.removeEventListener('pause', handlePause);
-  };
-}, []);
+    return () => {
+      video.removeEventListener("play", handlePlay);
+      video.removeEventListener("pause", handlePause);
+    };
+  }, []);
 
   return (
     <article className="w-full max-w-xl mx-auto rounded-xl border border-muted bg-background overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">

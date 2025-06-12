@@ -1,5 +1,6 @@
 import { Heart, Home, PlusSquare, Search, User } from "lucide-react";
 import { NavItem } from "./NavItem";
+import { CreateRecipeSheet } from "../CreateRecipeSheet";
 
 export function DesktopNavigation() {
   return (
@@ -11,7 +12,7 @@ export function DesktopNavigation() {
       <ul className="space-y-4">
         <NavItem href="/home" icon={<Home />} label="Home" />
         <NavItem href="/search" icon={<Search />} label="Search" />
-        <NavItem href="/create" icon={<PlusSquare />} label="Create" />
+        <CreateRecipeSheet />
         <NavItem href="/activity" icon={<Heart />} label="Activity" />
         <NavItem href="/profile" icon={<User />} label="Profile" />
       </ul>
