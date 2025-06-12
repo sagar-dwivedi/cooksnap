@@ -1,17 +1,20 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 
-type Step = "forgot" | { email: string };
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { useRouter } from "next/navigation";
 
-export default function PasswordReset() {
+type ResetStep = "forgot" | { email: string };
+
+export default function PasswordResetPage() {
   const { signIn } = useAuthActions();
-  const [step, setStep] = useState<Step>("forgot");
+  const router = useRouter();
+  const [step, setStep] = useState<ResetStep>("forgot");
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -23,8 +26,11 @@ export default function PasswordReset() {
       setStep({ email });
     } else {
       await signIn("password", formData);
+      router.replace("/signin");
     }
   };
+
+  const isForgotStep = step === "forgot";
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-muted/20 px-4">
@@ -33,18 +39,16 @@ export default function PasswordReset() {
           <CardHeader className="text-center space-y-2">
             <ShieldCheck className="w-8 h-8 text-primary mx-auto animate-pulse" />
             <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-primary to-amber-600 bg-clip-text text-transparent">
-              {step === "forgot"
-                ? "Reset Your Password"
-                : "Enter Verification Code"}
+              {isForgotStep ? "Reset Your Password" : "Enter Verification Code"}
             </CardTitle>
           </CardHeader>
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {step === "forgot" ? (
+              {isForgotStep ? (
                 <>
-                  {/* Email field */}
-                  <div className="space-y-2 relative">
+                  {/* Email */}
+                  <div className="space-y-2">
                     <label htmlFor="email" className="text-sm font-medium">
                       Email
                     </label>
@@ -54,14 +58,15 @@ export default function PasswordReset() {
                         id="email"
                         name="email"
                         type="email"
-                        placeholder="you@example.com"
+                        autoComplete="email"
                         required
+                        placeholder="you@example.com"
                         className="pl-10"
                       />
                     </div>
                   </div>
 
-                  <input name="flow" type="hidden" value="reset" />
+                  <input type="hidden" name="flow" value="reset" />
 
                   <Button type="submit" className="w-full">
                     Send Code
@@ -69,10 +74,10 @@ export default function PasswordReset() {
                 </>
               ) : (
                 <>
-                  {/* Code Field */}
+                  {/* Code */}
                   <div className="space-y-2">
                     <label htmlFor="code" className="text-sm font-medium">
-                      Code
+                      Verification Code
                     </label>
                     <Input
                       id="code"
@@ -83,8 +88,8 @@ export default function PasswordReset() {
                     />
                   </div>
 
-                  {/* New Password Field */}
-                  <div className="space-y-2 relative">
+                  {/* New Password */}
+                  <div className="space-y-2">
                     <label
                       htmlFor="newPassword"
                       className="text-sm font-medium"
@@ -99,15 +104,16 @@ export default function PasswordReset() {
                         type="password"
                         placeholder="••••••••"
                         required
+                        autoComplete="new-password"
                         className="pl-10"
                       />
                     </div>
                   </div>
 
-                  <input name="email" type="hidden" value={step.email} />
-                  <input name="flow" type="hidden" value="reset-verification" />
+                  <input type="hidden" name="email" value={step.email} />
+                  <input type="hidden" name="flow" value="reset-verification" />
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 pt-2">
                     <Button type="submit" className="w-full">
                       Continue
                     </Button>

@@ -36,14 +36,10 @@ export default function LandingPage() {
   }, [count]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex flex-col overflow-hidden">
+    <main className="min-h-screen bg-gradient-to-b from-background to-muted/50 flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto w-full relative z-10">
-        <motion.div
-          className="text-lg sm:text-xl font-bold flex items-center gap-2"
-          whileHover={{ scale: 1.05 }}
-          transition={{ type: "spring", stiffness: 400, damping: 10 }}
-        >
+      <header className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto w-full relative">
+        <div className="text-lg sm:text-xl font-bold flex items-center gap-2">
           <motion.div
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 1, repeat: Infinity, repeatDelay: 3 }}
@@ -53,7 +49,7 @@ export default function LandingPage() {
           <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text text-transparent">
             CookSnap
           </span>
-        </motion.div>
+        </div>
 
         <div className="flex items-center gap-4">
           <motion.div
