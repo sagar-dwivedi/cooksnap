@@ -11,11 +11,9 @@ const schema = defineSchema({
     ingredients: v.array(v.string()),
     steps: v.array(v.string()),
     mediaIds: v.array(v.id("media")),
-    createdAt: v.number(),
     tags: v.optional(v.array(v.string())),
   })
-    .index("by_author", ["author"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_author", ["author"]),
   media: defineTable({
     storageId: v.id("_storage"),
     type: v.union(v.literal("image"), v.literal("video")),

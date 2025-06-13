@@ -1,6 +1,6 @@
-import { Heart, Home, PlusSquare, Search, User } from "lucide-react";
+import { Heart, Home, Search, User } from "lucide-react";
+import { CreateRecipeDialog } from "../CreateRecipeSheet";
 import { NavItem } from "./NavItem";
-import { CreateRecipeSheet } from "../CreateRecipeSheet";
 
 export function DesktopNavigation() {
   return (
@@ -12,7 +12,7 @@ export function DesktopNavigation() {
       <ul className="space-y-4">
         <NavItem href="/home" icon={<Home />} label="Home" />
         <NavItem href="/search" icon={<Search />} label="Search" />
-        <CreateRecipeSheet />
+        <CreateRecipeDialog />
         <NavItem href="/activity" icon={<Heart />} label="Activity" />
         <NavItem href="/profile" icon={<User />} label="Profile" />
       </ul>

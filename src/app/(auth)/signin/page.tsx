@@ -3,12 +3,12 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Flame, Loader2, Lock, Mail } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
 
 type AuthStep = "signIn" | "signUp" | { email: string };
 

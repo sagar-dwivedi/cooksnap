@@ -12,7 +12,13 @@ const nextConfig: NextConfig = {
       {
         hostname: "source.unsplash.com",
       },
+      {
+        hostname: "moonlit-basilisk-965.convex.cloud",
+      },
     ],
+  },
+  experimental: {
+    viewTransition: true,
   },
 };
 
