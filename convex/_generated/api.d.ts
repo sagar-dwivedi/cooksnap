@@ -13,12 +13,6 @@ import type {
   FilterApi,
   FunctionReference,
 } from "convex/server";
-import type * as ResendOTP from "../ResendOTP.js";
-import type * as ResendOTPPasswordReset from "../ResendOTPPasswordReset.js";
-import type * as auth from "../auth.js";
-import type * as http from "../http.js";
-import type * as media from "../media.js";
-import type * as recipes from "../recipes.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -28,14 +22,7 @@ import type * as recipes from "../recipes.js";
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-declare const fullApi: ApiFromModules<{
-  ResendOTP: typeof ResendOTP;
-  ResendOTPPasswordReset: typeof ResendOTPPasswordReset;
-  auth: typeof auth;
-  http: typeof http;
-  media: typeof media;
-  recipes: typeof recipes;
-}>;
+declare const fullApi: ApiFromModules<{}>;
 export declare const api: FilterApi<
   typeof fullApi,
   FunctionReference<any, "public">
