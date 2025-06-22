@@ -1,6 +1,6 @@
 {
   "name": "cooksnap",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -11,8 +11,6 @@
   "dependencies": {
     "@convex-dev/auth": "^0.0.87",
     "@hookform/resolvers": "^5.1.1",
-    "@radix-ui/react-label": "^2.1.7",
-    "@radix-ui/react-slot": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.24.8",
