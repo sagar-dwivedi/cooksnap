@@ -87,7 +87,7 @@ export function LoginForm({
                         href="/forgot-password"
                         className="text-sm underline hover:underline-offset-2"
                       >
-                        Forgot?
+                        Forgot Password?
                       </Link>
                     </div>
                     <FormControl>

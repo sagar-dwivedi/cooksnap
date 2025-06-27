@@ -1,5 +1,13 @@
 "use client";
 
+import { useAuthActions } from "@convex-dev/auth/react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+
+import { OTPVerificationForm } from "@/components/otp-verification"; // Create this separately
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,11 +25,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 
 const signupSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -34,6 +37,7 @@ type SignUpFormValues = z.infer<typeof signupSchema>;
 
 export function SignUpForm() {
   const { signIn } = useAuthActions();
+  const [step, setStep] = useState<"signUp" | { email: string }>("signUp");
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signupSchema),
@@ -45,68 +49,77 @@ export function SignUpForm() {
 
   async function onSubmit(data: SignUpFormValues) {
     await signIn("password", { ...data, flow: "signUp" });
+    setStep({ email: data.email });
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 max-w-md mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
+          <CardTitle>
+            {step === "signUp" ? "Create an Account" : "Verify Your Email"}
+          </CardTitle>
           <CardDescription>
-            Enter your email below to sign up for a new account.
+            {step === "signUp"
+              ? "Enter your email below to sign up."
+              : "Enter the code we sent to your email to complete sign up."}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="m@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          {step === "signUp" ? (
+            <>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="you@example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input type="password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {form.formState.errors.root && (
-                <p className="text-sm text-red-600">
-                  {form.formState.errors.root.message}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="w-full"
-              >
-                {form.formState.isSubmitting ? "Signing up..." : "Sign up"}
-              </Button>
-            </form>
-          </Form>
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Link href="/login" className="underline">
-              Log in
-            </Link>
-          </div>
+                  <Button
+                    type="submit"
+                    disabled={form.formState.isSubmitting}
+                    className="w-full"
+                  >
+                    {form.formState.isSubmitting ? "Signing up..." : "Sign up"}
+                  </Button>
+                </form>
+              </Form>
+              <div className="mt-4 text-center text-sm">
+                Already have an account?{" "}
+                <Link href="/login" className="underline">
+                  Log in
+                </Link>
+              </div>
+            </>
+          ) : (
+            <OTPVerificationForm
+              email={step.email}
+              flow="email-verification"
+              onCancel={() => setStep("signUp")}
+            />
+          )}
         </CardContent>
       </Card>
     </div>
